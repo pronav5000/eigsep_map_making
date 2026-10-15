@@ -8,7 +8,7 @@ anyone picking this up can start there.
 
 - **Branch:** `refactor/modules` on the fork `christianhbye/eigsep_map_making` (pushed). The PR
   will go from the fork into `pronav5000/eigsep_map_making:main`.
-- **Phase:** implementing plan §7. Done: steps 2–5. Next: step 6 (`noise.py`, `simulate.py`).
+- **Phase:** implementing plan §7. Done: steps 2–6. Next: step 7 (`mapmaking.py`).
   D1–D10 settled (plan §8.1); Q3–Q5 use the proposals as working defaults.
 - **Beam (Q1/Q2 answered by the file):** `data/beam.npz` (gitignored), fetched from Christian's
   Google Drive link (see README "Data"). Bowtie `bm` (200, 130, 258) on MWSS at lmax 128,
@@ -16,8 +16,8 @@ anyone picking this up can start there.
   symmetric (free space?): 51–57 % of the power is below θ = 90°, so with croissant `main`'s
   ground model f_gnd ≈ 0.5. **Open: whether that is intended** (asked Christian).
 - **Package:** `alm`, `instrument` (+ `load_beam`), `sky`, `forward` (`ForwardModel`: apply,
-  adjoint, ground, m-space transform/response), `simulate` (synthetic beam and sky so far).
-- **Tests:** `pytest tests` — 28 pass in ~40 s (mostly JIT compilation); `pytest -m network`
+  adjoint, ground, m-space transform/response), `noise` (radiometer σ, stationary or σ(t), realizations), `simulate` (synthetic beam/sky, `simulate` → `Dataset`).
+- **Tests:** `pytest tests` — 32 pass in ~50 s (mostly JIT compilation); `pytest -m network`
   runs the pygdsm download test.
 - **Notebooks:** moved unchanged (outputs kept) to `notebooks/archive/`.
 - **Reproducible checks:** `scripts/review/*.py` back up the review findings in plan §2.
@@ -54,6 +54,15 @@ Q1 where to put the beam file (and its format), Q2 whether the beam covers the f
 Q3 the GSM version and network access, Q4 the ground model, Q5 the default observation setup.
 
 ## Entries
+
+### 2026-10-15: step 6, `noise.py` and `simulate.py`
+
+- `noise`: `radiometer_sigma`, `channel_width_hz` (MHz → Hz once), `integration_time_s` (window
+  length, or sample spacing, in seconds from Julian days ×86400 — fixes review 2.1.3),
+  `sigma_from_model` (stationary σ per (f, p) by default, σ(t) ∝ T_ant(t) optional, optional
+  fractional floor, off by default), `realize`.
+- `simulate.simulate` → `Dataset(obs, fm, x_true, y_clean, y, sigma, response)`: noisy mock data
+  (review 2.1.4) with σ from the radiometer equation; `noise_scale` for tests.
 
 ### 2026-10-15: step 5, `forward.py`; the beam file
 
