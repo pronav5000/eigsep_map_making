@@ -8,7 +8,7 @@ anyone picking this up can start there.
 
 - **Branch:** `refactor/modules` on the fork `christianhbye/eigsep_map_making` (pushed). The PR
   will go from the fork into `pronav5000/eigsep_map_making:main`.
-- **Phase:** implementing plan §7. Done: steps 2–7. Next: step 8 (`perturbations.py`).
+- **Phase:** implementing plan §7. Done: steps 2–8. Next: step 9 (`fitting.py`, `diagnostics.py`).
   D1–D10 settled (plan §8.1); Q3–Q5 use the proposals as working defaults.
 - **Beam (Q1/Q2 answered by the file):** `data/beam.npz` (gitignored), fetched from Christian's
   Google Drive link (see README "Data"). Bowtie `bm` (200, 130, 258) on MWSS at lmax 128,
@@ -16,8 +16,8 @@ anyone picking this up can start there.
   symmetric (free space?): 51–57 % of the power is below θ = 90°, so with croissant `main`'s
   ground model f_gnd ≈ 0.5. **Open: whether that is intended** (asked Christian).
 - **Package:** `alm`, `instrument` (+ `load_beam`), `sky`, `forward` (`ForwardModel`: apply,
-  adjoint, ground, m-space transform/response), `noise` (radiometer σ, stationary or σ(t), realizations), `simulate` (synthetic beam/sky, `simulate` → `Dataset`), `mapmaking` (Wiener CG / dense / per-m, posterior variance, constrained realizations, display clip).
-- **Tests:** `pytest tests` — 37 pass in ~65 s (mostly JIT compilation); `pytest -m network`
+  adjoint, ground, m-space transform/response), `noise` (radiometer σ, stationary or σ(t), realizations), `simulate` (synthetic beam/sky, `simulate` → `Dataset`), `mapmaking` (Wiener CG / dense / per-m, posterior variance, constrained realizations, display clip), `perturbations` (`BeamBasis`: SVD and low-ℓ bases with the scale direction removed; `LinearBeamModel`).
+- **Tests:** `pytest tests` — 43 pass in ~55 s (mostly JIT compilation); `pytest -m network`
   runs the pygdsm download test.
 - **Notebooks:** moved unchanged (outputs kept) to `notebooks/archive/`.
 - **Reproducible checks:** `scripts/review/*.py` back up the review findings in plan §2.
@@ -54,6 +54,22 @@ Q1 where to put the beam file (and its format), Q2 whether the beam covers the f
 Q3 the GSM version and network access, Q4 the ground model, Q5 the default observation setup.
 
 ## Entries
+
+### 2026-10-15: step 8, `perturbations.py`
+
+- `BeamBasis(modes (K, F, *grid), sigma, sampling, names)`: modes orthonormal in
+  Σ_f ∫ a_f b_f dΩ (HEALPix or s2fft quadrature), scaled to the beam's RMS, so β_k = 0.05 is a 5 %
+  RMS beam error (default prior σ).
+- `svd_basis(beam_maps, k, select=...)`: SVD over the *full band* (with one channel, as in the
+  notebooks, the SVD has a single mode, the beam itself), modes u_j(f) v_j(n) evaluated at the
+  selected channels, scale direction removed per channel, re-orthonormalized. Test: without
+  removal the leading mode is ≥ 95 % scale direction (97 % for the synthetic beam; review 2.2.3).
+- `lowl_basis(beam_maps, lmax_pert, n_freq_funcs)`: multiplicative B0·Y_ℓm·P_j(ν), 1 ≤ ℓ ≤
+  lmax_pert, Legendre in frequency, scale removed. `real_harmonics` on any grid.
+- `LinearBeamModel.build(beam, basis, obs)`: responses of B0 and of each mode precomputed;
+  `forward_model(β)` is a linear combination (norm and ground fraction stay exact ratios).
+  Verified equal to a full recompute through croissant (1e-11), differentiable under `jit`, and a
+  "mode" equal to the beam leaves the data unchanged.
 
 ### 2026-10-15: step 7, `mapmaking.py`
 
