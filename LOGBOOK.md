@@ -8,7 +8,10 @@ anyone picking this up can start there.
 
 - **Branch:** `refactor/modules` on the fork `christianhbye/eigsep_map_making` (pushed). The PR
   goes from the fork into `pronav5000/eigsep_map_making:main` (plan §7 step 12).
-- **Phase:** plan §7 steps 2–11 done. Next: step 12, open the PR.
+- **Phase:** plan §7 steps 2–11 done and pushed. Step 12: this session has no access to
+  `pronav5000/eigsep_map_making`, so the PR is opened from the compare link
+  https://github.com/pronav5000/eigsep_map_making/compare/main...christianhbye:eigsep_map_making:refactor/modules
+  (a PR description was drafted in the session).
 - **Package:** `eigsep_mapmaking` — `alm`, `instrument`, `sky`, `forward`, `noise`, `simulate`,
   `mapmaking`, `perturbations`, `fitting`, `diagnostics`. Mathematics in `docs/math.md`.
 - **Tests:** `pytest` — 53 pass in ~75 s (mostly JIT compilation), synthetic data only;
