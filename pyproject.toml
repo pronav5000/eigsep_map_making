@@ -25,3 +25,5 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = ["network: needs network access (pygdsm data); deselect with -m 'not network'"]
+addopts = "-m 'not network'"

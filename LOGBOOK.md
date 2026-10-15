@@ -8,11 +8,14 @@ anyone picking this up can start there.
 
 - **Branch:** `refactor/modules` on the fork `christianhbye/eigsep_map_making` (pushed). The PR
   will go from the fork into `pronav5000/eigsep_map_making:main`.
-- **Phase:** implementing plan §7. Done: steps 2–3. Next: step 4 (`instrument.py`, `sky.py`).
-  D1–D10 settled (plan §8.1); Q1–Q5 use the proposals as working defaults. Q1/Q2: Christian will
-  share the beam file (>30 MB) via a GitHub release on the fork or a public link.
-- **Package:** `eigsep_mapmaking.alm` (packing, index helpers, C_l). `pip install -e .` works.
-- **Tests:** `pytest tests` — 10 pass in ~9 s.
+- **Phase:** implementing plan §7. Done: steps 2–4. Next: step 5 (`forward.py`).
+  D1–D10 settled (plan §8.1); Q1–Q5 use the proposals as working defaults. Q1/Q2: Christian
+  shared the beam file through a Google Drive link (being fetched and inspected).
+- **Package:** `alm` (packing), `instrument` (`Observation`, pointings, `BeamResponse` via
+  croissant `rotate_to_grid` → `Beam` → `topo_to_sim`), `sky` (GSM via pygdsm, sky alm in the
+  sim frame, `SkyPrior`), `simulate` (synthetic beam and sky so far).
+- **Tests:** `pytest tests` — 22 pass in ~36 s (mostly JIT compilation); `pytest -m network`
+  runs the pygdsm download test (passes now that the network allows zenodo).
 - **Notebooks:** moved unchanged (outputs kept) to `notebooks/archive/`.
 - **Reproducible checks:** `scripts/review/*.py` back up the review findings in plan §2.
 - **Data:** none in the repo; `data/` is gitignored. The cloud network policy now allows
@@ -49,6 +52,29 @@ Q1 where to put the beam file (and its format), Q2 whether the beam covers the f
 Q3 the GSM version and network access, Q4 the ground model, Q5 the default observation setup.
 
 ## Entries
+
+### 2026-10-15: step 4, `instrument.py` and `sky.py`
+
+- `Observation` (frozen dataclass): times (+ optional windows), freqs, lmax, site, world, Tgnd,
+  ground-fixed horizon, pointings as ZYZ Euler angles; `et_ref`, `phases`, and `frame` (a
+  croissant `Simulator` with an empty beam and sky, used for `topo_to_sim` and phases).
+  `Observation.default` is plan Q5 (notebook site/start, 500 times over a sidereal day, 20 tilts).
+- Pointing convention made explicit: `pointing_matrix(tilt, az, rot)` turns the antenna about the
+  zenith (clockwise, croissant's `beam_rot`), then tilts the boresight by `tilt` towards compass
+  azimuth `az`. The notebooks' healpy `rot=(0,0,el)` tilts along the N–S line; the default here
+  tilts towards North.
+- `beam_response`: full-sphere beam alm → `rotate_to_grid` (MWSS) per pointing → croissant
+  `Beam` with ground-fixed `horizon_theta` (fractional edge weights) → `compute_alm`,
+  `compute_norm` (full sphere), `compute_fgnd` → `topo_to_sim`. Returns `BeamResponse(alm, norm,
+  above)`, linear in the beam pattern.
+- Verified: V = [conv(alm_h, sky) + (norm − above)·Tgnd]/norm equals `croissant.Simulator.sim`
+  to 1e-10 for every pointing, with and without integration windows; sky alm equal
+  `precompute_sky_alm`; norm is pointing-independent; zenith fgnd matches the pixel sum; a
+  symmetric beam tilted to the horizon has fgnd = 0.5; the response is linear.
+- `sky`: `gsm_maps` (pygdsm GSM2016, K RJ, ud_grade to nside), `save_sky`/`load_sky`,
+  `sky_alm_sim`, `SkyPrior` (`from_cl`, `oracle` with floor, non-oracle `power_law`, `sample`).
+- `simulate`: `synthetic_beam_maps` (chromatic, elliptical, with a back lobe) and
+  `synthetic_sky_maps` (positive, spatially varying spectral index).
 
 ### 2026-10-15: step 3, `alm.py`
 
