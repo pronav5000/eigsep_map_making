@@ -8,13 +8,15 @@ anyone picking this up can start there.
 
 - **Branch:** `refactor/modules` on the fork `christianhbye/eigsep_map_making` (pushed). The PR
   will go from the fork into `pronav5000/eigsep_map_making:main`.
-- **Phase:** implementing plan §7. Done: step 2 (packaging skeleton). Next: step 3 (`alm.py`).
-  D1–D10 settled (plan §8.1); Q1–Q5 use the proposals as working defaults, Q1/Q2 (beam file)
-  still need Christian's answer.
-- **Package:** `src/eigsep_mapmaking/` exists but is empty; `pip install -e .` works.
+- **Phase:** implementing plan §7. Done: steps 2–3. Next: step 4 (`instrument.py`, `sky.py`).
+  D1–D10 settled (plan §8.1); Q1–Q5 use the proposals as working defaults. Q1/Q2: Christian will
+  share the beam file (>30 MB) via a GitHub release on the fork or a public link.
+- **Package:** `eigsep_mapmaking.alm` (packing, index helpers, C_l). `pip install -e .` works.
+- **Tests:** `pytest tests` — 10 pass in ~9 s.
 - **Notebooks:** moved unchanged (outputs kept) to `notebooks/archive/`.
 - **Reproducible checks:** `scripts/review/*.py` back up the review findings in plan §2.
-- **Data:** none of the data files the notebooks load are in the repo; `data/` is gitignored.
+- **Data:** none in the repo; `data/` is gitignored. The cloud network policy now allows
+  zenodo.org (pygdsm), GitHub release downloads, Google Drive and Dropbox.
 
 ### Environments that work
 
@@ -47,6 +49,14 @@ Q1 where to put the beam file (and its format), Q2 whether the beam covers the f
 Q3 the GSM version and network access, Q4 the ground model, Q5 the default observation setup.
 
 ## Entries
+
+### 2026-10-15: step 3, `alm.py`
+
+`pack`/`unpack` (any leading axes), `n_real`, `ell_of_packed`, `m_of_packed`, `cl_from_packed`,
+`cl_from_alm`, `cl_to_packed`, `reduce_lmax`. Packing order is the notebooks' (m=0 real; then
+√2 Re, √2 Im for m>0, ordered by m then l), so old packed vectors stay readable. The package
+enables `jax_enable_x64` on import. Tests: round trip, Hermitian symmetry, x·y = Σ a b* and
+= ∫fg (HEALPix quadrature, 2%), Var(x_i) = C_ℓ for m=0 and m>0 (4000 draws), C_ℓ = healpy's.
 
 ### 2026-10-15: step 2, packaging skeleton
 
