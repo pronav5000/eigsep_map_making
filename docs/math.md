@@ -308,11 +308,15 @@ directions.
 
 ### 6.4 Sampling
 
-NUTS on β with prior β_k ~ N(0, σ_k) and the factor (6.2) (`numpyro_model`, `run_nuts`). The
-chain starts at β = 0. Far from the nominal beam, (6.2) can have secondary modes: a chain
-started by numpyro's default (uniform in (−2, 2)) stuck at log L = −387 against −305 at the
-truth. Given β samples, sky posterior draws come from §4.4 for each β (a Gibbs sampler for
-partial-day data is a follow-up)
+NUTS on β, with prior β_k ~ N(0, σ_k) and the factor (6.2) (`numpyro_model`, `run_nuts`). The
+posterior is usually far narrower than the prior, and (6.2) can have secondary modes, so the
+chain starts at the MAP (`find_map`: BFGS on log p(β | y) with JAX gradients, from β = 0 and
+from prior draws, keeping the best) and uses a dense mass matrix. Three failures led to this.
+A chain started by numpyro's default (uniform in (−2, 2)) stuck at log L = −387, against −305
+at the truth. A chain started at β = 0 stalled during warmup when the posterior was ~100×
+narrower than the prior. With 3 pointings, BFGS from β = 0 found a secondary mode
+[`test_fitting::test_find_map_escapes_secondary_mode`]. Given β samples, sky posterior draws
+come from §4.4 for each β. A Gibbs sampler for partial-day data is a follow-up
 [`test_fitting::test_nuts_recovers_injected_beam_error`].
 
 ---
