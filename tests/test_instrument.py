@@ -126,3 +126,21 @@ def test_gsm_maps():
     pytest.importorskip("pygdsm")
     m = sky.gsm_maps([50.0, 60.0], NSIDE)
     assert m.shape == (2, 12 * NSIDE**2) and np.all(m > 0) and m[0].mean() > m[1].mean()
+
+
+def test_load_beam_and_mwss_input(tmp_path, obs):
+    """An MWSS beam file in Hz (the layout of EIGSEP's bowtie export) loads and gives the
+    same response as the HEALPix version of the same band-limited beam."""
+    L = LMAX + 1
+    th = croissant.utils.generate_theta(LMAX, "mwss")
+    ph = croissant.utils.generate_phi(LMAX, "mwss")
+    T, P = np.meshgrid(th, ph, indexing="ij")
+    bm = np.stack([np.exp(-(T / 0.8) ** 2) * (1 + 0.2 * np.cos(2 * P)) * s for s in (1, 1.1, 1.3)])
+    np.savez(tmp_path / "b.npz", bm=bm, freqs=np.array([45e6, 50e6, 55e6]), lmax=LMAX)
+    maps, freqs, sampling = instrument.load_beam(tmp_path / "b.npz", freqs_mhz=FREQS)
+    assert sampling == "mwss" and maps.shape == (2, L + 1, 2 * L)
+    np.testing.assert_allclose(freqs, FREQS)
+    r = instrument.beam_response(maps, obs, sampling="mwss")
+    assert r.alm.shape == (obs.n_pointings, 2, L, 2 * L - 1)
+    with pytest.raises(ValueError):
+        instrument.load_beam(tmp_path / "b.npz", freqs_mhz=[52.0])

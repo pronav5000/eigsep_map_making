@@ -246,3 +246,28 @@ def beam_response_from_alm(alm_topo, obs):
         norms.append(norm)
         aboves.append(norm * (1.0 - beam.compute_fgnd()))
     return BeamResponse(jnp.stack(alms), jnp.stack(norms), jnp.stack(aboves))
+
+
+def load_beam(path, freqs_mhz=None):
+    """Read a beam file; returns ``(maps, freqs_mhz, sampling)``.
+
+    The file is an ``.npz`` with ``bm`` (F, Npix) HEALPix RING or (F, Ntheta, Nphi) on an
+    s2fft grid, and ``freqs`` in Hz or MHz (values above 1e4 are taken as Hz). The grid is
+    ``sampling`` if stored, else MWSS for 2-D grids (EIGSEP's ``bowtie_v002`` export: MWSS at
+    lmax 128, directivity normalized to 4 pi over the full sphere). ``freqs_mhz`` selects the
+    nearest stored channels. The pattern must cover the full sphere (plan §8.2 Q2).
+    """
+    with np.load(path, allow_pickle=False) as f:
+        bm = np.asarray(f["bm"], float)
+        freqs = np.asarray(f["freqs"], float)
+        sampling = str(f["sampling"]) if "sampling" in f.files else (
+            "healpix" if bm.ndim == 2 else "mwss")
+    if np.max(freqs) > 1e4:
+        freqs = freqs / 1e6
+    if freqs_mhz is not None:
+        idx = np.array([np.argmin(np.abs(freqs - nu)) for nu in np.atleast_1d(freqs_mhz)])
+        if np.any(np.abs(freqs[idx] - np.atleast_1d(freqs_mhz)) > 1e-6):
+            raise ValueError(f"requested frequencies not in the file; it has {freqs.min()}-"
+                             f"{freqs.max()} MHz")
+        bm, freqs = bm[idx], freqs[idx]
+    return bm, freqs, sampling

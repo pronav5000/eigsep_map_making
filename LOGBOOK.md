@@ -8,18 +8,20 @@ anyone picking this up can start there.
 
 - **Branch:** `refactor/modules` on the fork `christianhbye/eigsep_map_making` (pushed). The PR
   will go from the fork into `pronav5000/eigsep_map_making:main`.
-- **Phase:** implementing plan §7. Done: steps 2–4. Next: step 5 (`forward.py`).
-  D1–D10 settled (plan §8.1); Q1–Q5 use the proposals as working defaults. Q1/Q2: Christian
-  shared the beam file through a Google Drive link (being fetched and inspected).
-- **Package:** `alm` (packing), `instrument` (`Observation`, pointings, `BeamResponse` via
-  croissant `rotate_to_grid` → `Beam` → `topo_to_sim`), `sky` (GSM via pygdsm, sky alm in the
-  sim frame, `SkyPrior`), `simulate` (synthetic beam and sky so far).
-- **Tests:** `pytest tests` — 22 pass in ~36 s (mostly JIT compilation); `pytest -m network`
-  runs the pygdsm download test (passes now that the network allows zenodo).
+- **Phase:** implementing plan §7. Done: steps 2–5. Next: step 6 (`noise.py`, `simulate.py`).
+  D1–D10 settled (plan §8.1); Q3–Q5 use the proposals as working defaults.
+- **Beam (Q1/Q2 answered by the file):** `data/beam.npz` (gitignored), fetched from Christian's
+  Google Drive link (see README "Data"). Bowtie `bm` (200, 130, 258) on MWSS at lmax 128,
+  51–250 MHz (`freqs` in Hz), directivity (∫ = 4π), full sphere. It is close to up/down
+  symmetric (free space?): 51–57 % of the power is below θ = 90°, so with croissant `main`'s
+  ground model f_gnd ≈ 0.5. **Open: whether that is intended** (asked Christian).
+- **Package:** `alm`, `instrument` (+ `load_beam`), `sky`, `forward` (`ForwardModel`: apply,
+  adjoint, ground, m-space transform/response), `simulate` (synthetic beam and sky so far).
+- **Tests:** `pytest tests` — 28 pass in ~40 s (mostly JIT compilation); `pytest -m network`
+  runs the pygdsm download test.
 - **Notebooks:** moved unchanged (outputs kept) to `notebooks/archive/`.
 - **Reproducible checks:** `scripts/review/*.py` back up the review findings in plan §2.
-- **Data:** none in the repo; `data/` is gitignored. The cloud network policy now allows
-  zenodo.org (pygdsm), GitHub release downloads, Google Drive and Dropbox.
+- **Network:** the cloud policy now allows zenodo.org (pygdsm), GitHub releases, Google Drive.
 
 ### Environments that work
 
@@ -52,6 +54,21 @@ Q1 where to put the beam file (and its format), Q2 whether the beam covers the f
 Q3 the GSM version and network access, Q4 the ground model, Q5 the default observation setup.
 
 ## Entries
+
+### 2026-10-15: step 5, `forward.py`; the beam file
+
+- `ForwardModel` (equinox module): `apply` contracts over ℓ first, then over m with the phases
+  (P·F·L·M + T·F·P·M instead of T·P·F·L·M); `adjoint` via `jax.linear_transpose` (needed
+  `unique_indices=True` in `alm.unpack`); `ground`; `predict`. Built from a `BeamResponse`.
+- m-space: `to_mspace` (projection on e^{+imφ_t}), `window_factor` w_m, `mspace_response`
+  R[f,m,p,ℓ], `mspace_ground`. Verified Y = R·conj(s) + ground to 1e-8 (limited by Julian-day
+  rounding of the sample times, ~40 µs) for snapshots and for integration windows, where
+  w_m = e^{−imΔφ/2} sinc(mΔφ/2).
+- Tests: `predict` = croissant `convolve`/norm + ground; adjoint dot test (1e-12); invariance
+  under B → c_f B including the ground term.
+- `instrument.load_beam`: npz with `bm` + `freqs` (Hz or MHz), HEALPix or MWSS, channel
+  selection. Christian's bowtie file loads (see Current state); its below-horizon half is an
+  open physics question.
 
 ### 2026-10-15: step 4, `instrument.py` and `sky.py`
 

@@ -79,9 +79,10 @@ def unpack(x, lmax=None):
     c = (x[..., L : L + npos] + 1j * x[..., L + npos :]) / np.sqrt(2.0)
     sign = (-1.0) ** (cols - lmax)
     alm = jnp.zeros(x.shape[:-1] + (L, 2 * L - 1), dtype=complex)
-    alm = alm.at[..., :, lmax].set(x[..., :L].astype(complex))
-    alm = alm.at[..., rows, cols].set(c)
-    alm = alm.at[..., rows, 2 * lmax - cols].set(sign * jnp.conj(c))
+    # unique_indices lets jax.linear_transpose build the adjoint
+    alm = alm.at[..., :, lmax].set(x[..., :L].astype(complex), unique_indices=True)
+    alm = alm.at[..., rows, cols].set(c, unique_indices=True)
+    alm = alm.at[..., rows, 2 * lmax - cols].set(sign * jnp.conj(c), unique_indices=True)
     return alm
 
 
