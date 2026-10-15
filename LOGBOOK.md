@@ -8,7 +8,7 @@ anyone picking this up can start there.
 
 - **Branch:** `refactor/modules` on the fork `christianhbye/eigsep_map_making` (pushed). The PR
   will go from the fork into `pronav5000/eigsep_map_making:main`.
-- **Phase:** implementing plan §7. Done: steps 2–6. Next: step 7 (`mapmaking.py`).
+- **Phase:** implementing plan §7. Done: steps 2–7. Next: step 8 (`perturbations.py`).
   D1–D10 settled (plan §8.1); Q3–Q5 use the proposals as working defaults.
 - **Beam (Q1/Q2 answered by the file):** `data/beam.npz` (gitignored), fetched from Christian's
   Google Drive link (see README "Data"). Bowtie `bm` (200, 130, 258) on MWSS at lmax 128,
@@ -16,8 +16,8 @@ anyone picking this up can start there.
   symmetric (free space?): 51–57 % of the power is below θ = 90°, so with croissant `main`'s
   ground model f_gnd ≈ 0.5. **Open: whether that is intended** (asked Christian).
 - **Package:** `alm`, `instrument` (+ `load_beam`), `sky`, `forward` (`ForwardModel`: apply,
-  adjoint, ground, m-space transform/response), `noise` (radiometer σ, stationary or σ(t), realizations), `simulate` (synthetic beam/sky, `simulate` → `Dataset`).
-- **Tests:** `pytest tests` — 32 pass in ~50 s (mostly JIT compilation); `pytest -m network`
+  adjoint, ground, m-space transform/response), `noise` (radiometer σ, stationary or σ(t), realizations), `simulate` (synthetic beam/sky, `simulate` → `Dataset`), `mapmaking` (Wiener CG / dense / per-m, posterior variance, constrained realizations, display clip).
+- **Tests:** `pytest tests` — 37 pass in ~65 s (mostly JIT compilation); `pytest -m network`
   runs the pygdsm download test.
 - **Notebooks:** moved unchanged (outputs kept) to `notebooks/archive/`.
 - **Reproducible checks:** `scripts/review/*.py` back up the review findings in plan §2.
@@ -54,6 +54,18 @@ Q1 where to put the beam file (and its format), Q2 whether the beam covers the f
 Q3 the GSM version and network access, Q4 the ground model, Q5 the default observation setup.
 
 ## Entries
+
+### 2026-10-15: step 7, `mapmaking.py`
+
+- `wiener_cg`: dual form (A S Aᵀ + N)α = y − g with N⁻¹ preconditioning; returns x̂ and the
+  relative residual. Ground term subtracted first (it is known: f_gnd·Tgnd).
+- `wiener_mspace`: exact per-(f, m) Wiener filter with P×P solves; m = 0 handled as real.
+  `posterior_var_mspace`: exact posterior variance of every packed entry (the m > 0 posterior is
+  circular, so √2 Re and √2 Im each carry Var(t_ℓm)). `mspace_blocks` exposes R, C_ℓ, N_m, C_m.
+- `wiener_dense`/`forward_matrix` for small problems; `constrained_realization` (x̂(y) + x_s −
+  x̂(A x_s + n_s)) with either solver; `clip_positive_for_display` (no γ rescale; review 2.1.6).
+- Tests (noisy data, oracle prior with floor): CG = dense to 1e-7, per-m = dense to 1e-6 (mean)
+  and 1e-5 (variance); 400 constrained realizations match the dense posterior mean and variance.
 
 ### 2026-10-15: step 6, `noise.py` and `simulate.py`
 
