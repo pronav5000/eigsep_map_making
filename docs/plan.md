@@ -2,7 +2,7 @@
 
 **Status: implemented (steps 1–11 of §7); see `LOGBOOK.md` for what was done and what changed
 along the way. Q1/Q2 are answered by the beam file (§8.2); the below-horizon half of that beam
-is a new open question (§8.2 Q6).**
+was Q6 (§8.2), answered: the uniform-ground model is fine for now.**
 Progress is tracked in [`LOGBOOK.md`](../LOGBOOK.md).
 
 Deliverable: branch `refactor/modules`, pushed to the fork `christianhbye/eigsep_map_making`,
@@ -267,7 +267,7 @@ allows zenodo.org (`scripts/make_gsm.py`). Q4, Q5: proposals in use.
 
 | # | question | status |
 |---|---|---|
-| Q6 | The bowtie pattern has 51–57 % of its power below θ = 90° (close to up/down symmetric, as in free space), so croissant `main`'s model gives f_gnd ≈ 0.5 for a zenith pointing: half of every sample is the 300 K ground term. Is the file a free-space beam, and is a uniform ground at T_gnd the right model for the lower half? | open, asked Christian |
+| Q6 | The bowtie pattern has 51–57 % of its power below θ = 90° (close to up/down symmetric, as in free space), so croissant `main`'s model gives f_gnd ≈ 0.5 for a zenith pointing: half of every sample is the 300 K ground term. Is the file a free-space beam, and is a uniform ground at T_gnd the right model for the lower half? | **answered:** a uniform ground at T_gnd is a fine model for now (Christian, 2026-10-15) |
 
 ## 9. Out of scope for this PR (follow-ups)
 

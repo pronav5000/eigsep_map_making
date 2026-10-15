@@ -20,9 +20,11 @@ anyone picking this up can start there.
   GSM2016 at lmax 32, ~2 min): both recover an injected 3-mode beam error to the Fisher precision.
 - **Data:** `data/` (gitignored). `scripts/fetch_beam.py` downloads the beam (sha256-checked);
   `scripts/make_gsm.py` writes `data/gsm_<nside>.npz` (network policy now allows zenodo.org).
-- **Open questions:** Q6 (plan §8.2): the bowtie file is close to up/down symmetric (51–57 %
-  below the horizon), so f_gnd ≈ 0.5 under croissant's ground model — intended? Q4 (ground
-  model) and Q5 (default observation) use the proposals.
+- **Open questions:** none blocking. Q6 answered (uniform ground at T_gnd is fine for now,
+  although the bowtie has 51–57 % of its power below the horizon). Q4 (ground known vs nuisance)
+  and Q5 (default observation) use the proposals.
+- **Tutorial:** `examples/tutorial.ipynb` (executed, outputs kept) walks through set-up,
+  simulation, mapmaking, beam bases, MAP/Fisher/NUTS, and the knobs to tune.
 - **Notebooks:** unchanged in `notebooks/archive/`. `scripts/review/` needs croissant v4.2.1
   (see below).
 
@@ -57,6 +59,22 @@ Q1 where to put the beam file (and its format), Q2 whether the beam covers the f
 Q3 the GSM version and network access, Q4 the ground model, Q5 the default observation setup.
 
 ## Entries
+
+### 2026-10-15: Q6 answered; tutorial notebook
+
+- Christian: a uniform ground at T_gnd is a fine model for now (Q6 closed in plan §8.2 and
+  math §7).
+- `examples/tutorial.ipynb`: set-up and knobs (lmax, times, pointings, windows, Tgnd, horizon),
+  beam and sky (data/ files or synthetic fallback), simulation and noise, identifiability, Wiener
+  maps (oracle vs power-law prior, m-space vs CG, per-ℓ error, posterior sd, constrained
+  realizations), beam bases and an injected error, MAP/Fisher/whitening/NUTS with a corner plot,
+  results with the fitted beam, and a table of what to change for what. Executed on the bowtie
+  + GSM2016 (lmax 32, 20 pointings, 55–56 MHz) in ~2.2 min with outputs kept: CG and m-space
+  agree to 3e-5 (CG tol 1e-8); map error 0.24 (both priors); NUTS β = (0.0758 ± 0.0003,
+  −0.0504 ± 0.0003, 0.0232 ± 0.0009) for truth (0.075, −0.05, 0.025); beam error 9.4 % → 0.21 %;
+  map error 5.43 (nominal) / 0.195 (fitted) / 0.182 (true beam).
+- For the bowtie, the raw leading SVD mode is 90 % scale direction (math §5.2 updated; the
+  ≥ 95 % figure was for the synthetic beam).
 
 ### 2026-10-15: step 11, README, scripts, example
 

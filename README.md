@@ -52,7 +52,9 @@ lin = perturbations.LinearBeamModel.build(beam, basis, obs)
 beta = fitting.run_nuts(lin, prior, data.sigma, data.y, basis.sigma)
 ```
 
-`examples/simulate_map_and_fit.py` does all of this end to end, injecting a beam error first.
+**[`examples/tutorial.ipynb`](examples/tutorial.ipynb)** walks through all of this with plots and
+the knobs to tune (executed on the bowtie and GSM2016; it falls back to synthetic data without
+`data/`). `examples/simulate_map_and_fit.py` does the same end to end as a script, injecting a beam error first.
 Run it with `--data` to use the files above. On the EIGSEP bowtie and GSM2016 (ℓmax 32,
 20 pointings, 2 channels, ~2 min on a CPU), NUTS recovers an injected 3-mode beam error to its
 Fisher precision, and the normalized beam error falls from 9.4 % to 0.13 %.
@@ -76,7 +78,7 @@ src/eigsep_mapmaking/
 tests/              pytest, small nside, synthetic data
 docs/               math.md (foundation), plan.md (plan and review)
 scripts/            fetch_beam.py, make_gsm.py, review/ (checks behind the review, croissant v4)
-examples/           simulate_map_and_fit.py
+examples/           tutorial.ipynb, simulate_map_and_fit.py
 notebooks/archive/  the original notebooks, unmodified
 ```
 

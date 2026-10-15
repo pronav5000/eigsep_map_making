@@ -243,7 +243,8 @@ re-orthonormalize in Σ_ν ∫ dΩ. Modes are scaled to the beam's RMS, so β_k 
 error.
 
 * `svd_basis`: B = Σ_j s_j u_j(ν) v_j(n̂) over the **whole band**, raw modes u_j(ν) v_j(n̂).
-  Without the projection the leading mode is ≥ 95 % scale
+  Without the projection the leading mode is mostly scale (≥ 95 % for the synthetic beam, 90 % for
+  the EIGSEP bowtie at 55–56 MHz)
   [`test_perturbations::test_svd_raw_basis_is_mostly_scale`]. That explains the notebooks'
   near-degenerate fits and the "oracle" p ≈ −0.047·(1, …, 1). With one channel the SVD has a
   single mode, the beam itself, so the SVD must be taken over the band.
@@ -340,7 +341,7 @@ come from §4.4 for each β. A Gibbs sampler for partial-day data is a follow-up
   implemented).
 * **Ground.** A uniform T_gnd, known and subtracted. The EIGSEP bowtie file is a full-sphere
   directivity with 51–57 % of its power below θ = 90° (no ground plane in the pattern), so
-  f_gnd ≈ 0.5 for a zenith pointing. Whether that is the right physical model is an open
-  question.
+  f_gnd ≈ 0.5 for a zenith pointing. Christian confirmed the uniform-ground model is fine
+  for now; a ground that varies, or scatters the sky, is not modelled.
 * **Not modelled:** polarization, aberration (croissant's note: up to 20″), ground scattering,
   beam chromaticity faster than the beam file's channels, and frequency coupling in the prior.
