@@ -32,3 +32,26 @@ def test_map_error_per_ell():
     np.testing.assert_allclose(diagnostics.map_error_per_ell(x, x), 0.0)
     np.testing.assert_allclose(diagnostics.map_error_per_ell(1.5 * x, x), 0.5)
     assert abs(diagnostics.relative_error(1.1 * x, x) - 0.1) < 1e-12
+
+
+def test_notebook_amp_phase_perturbation():
+    """The notebooks' 'amp 1.1, phase 5 deg' error (all s2fft coefficients times 1.1 e^{i5deg},
+    reality=True synthesis): the amplitude is invisible after normalization, and the phase
+    acts as cos(5 deg) on m = 0 plus a turn of the m > 0 part, identical at every frequency
+    (docs/math.md §5)."""
+    import s2fft
+    nside, lmax = 4, 8
+    B = simulate.synthetic_beam_maps(nside, [50.0])[0]
+    fwd = lambda f: s2fft.forward(jnp.asarray(f), L=lmax + 1, nside=nside, sampling="healpix",
+                                  reality=True, method="jax")
+    inv = lambda a: np.asarray(s2fft.inverse(a, L=lmax + 1, nside=nside, sampling="healpix",
+                                             reality=True, method="jax")).real
+    a = fwd(B)
+    c = 1.1 * np.exp(1j * np.radians(5.0))
+    pert = inv(a * c)  # the notebook's perturbed map
+    m = np.arange(-lmax, lmax + 1)
+    want = np.where(m > 0, c, 0) * a  # m > 0: times c
+    want = want + np.where(m == 0, (c * a).real, 0)  # m = 0: imaginary part dropped
+    np.testing.assert_allclose(pert, inv(jnp.asarray(want)), atol=1e-10 * float(B.max()))
+    # the m = 0 part is scaled by 1.1 cos 5deg, the m > 0 part by 1.1 and turned by 5 deg in phase
+    np.testing.assert_allclose(want[:, lmax], 1.1 * np.cos(np.radians(5)) * a[:, lmax])

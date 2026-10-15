@@ -71,3 +71,16 @@ def test_nuts_recovers_injected_beam_error(setup):
     fit = pt.inject_error(s["B0"], s["basis"], np.asarray(mean))
     assert np.all(diagnostics.normalized_beam_error(fit, true) <
                   diagnostics.normalized_beam_error(s["B0"], true))
+
+
+def test_rotation_about_pole_is_exactly_degenerate(setup):
+    """Turning every beam about the celestial pole (b_lm -> b_lm e^{-i m a}) is absorbed by
+    the isotropic sky prior: the marginal likelihood does not change (docs/math.md §5)."""
+    s = setup
+    d = s["data"]
+    fm = s["lin"].forward_model(jnp.zeros(2))
+    m = jnp.arange(-fm.lmax, fm.lmax + 1)
+    rot = type(fm)(fm.beam * jnp.exp(-1j * m * 0.7), fm.offset, fm.phases, fm.phi, fm.lmax)
+    Y = fm.to_mspace(d.y)
+    ll = lambda f: fitting.loglike_mspace_Y(*fitting._mspace_terms(f, s["prior"], d.sigma), Y)
+    np.testing.assert_allclose(ll(rot), ll(fm), rtol=1e-12)

@@ -8,7 +8,7 @@ anyone picking this up can start there.
 
 - **Branch:** `refactor/modules` on the fork `christianhbye/eigsep_map_making` (pushed). The PR
   will go from the fork into `pronav5000/eigsep_map_making:main`.
-- **Phase:** implementing plan §7. Done: steps 2–9. Next: step 10 (`docs/math.md`).
+- **Phase:** implementing plan §7. Done: steps 2–10. Next: step 11 (README, `scripts/make_gsm.py`, example).
   D1–D10 settled (plan §8.1); Q3–Q5 use the proposals as working defaults.
 - **Beam (Q1/Q2 answered by the file):** `data/beam.npz` (gitignored), fetched from Christian's
   Google Drive link (see README "Data"). Bowtie `bm` (200, 130, 258) on MWSS at lmax 128,
@@ -17,7 +17,7 @@ anyone picking this up can start there.
   ground model f_gnd ≈ 0.5. **Open: whether that is intended** (asked Christian).
 - **Package:** `alm`, `instrument` (+ `load_beam`), `sky`, `forward` (`ForwardModel`: apply,
   adjoint, ground, m-space transform/response), `noise` (radiometer σ, stationary or σ(t), realizations), `simulate` (synthetic beam/sky, `simulate` → `Dataset`), `mapmaking` (Wiener CG / dense / per-m, posterior variance, constrained realizations, display clip), `perturbations` (`BeamBasis`: SVD and low-ℓ bases with the scale direction removed; `LinearBeamModel`), `fitting` (sky-marginalized m-space likelihood, dense and fixed-sky versions, Fisher, whitening, NUTS), `diagnostics`.
-- **Tests:** `pytest tests` — 50 pass in ~75 s (mostly JIT compilation); `pytest -m network`
+- **Tests:** `pytest tests` — 52 pass in ~75 s (mostly JIT compilation); `pytest -m network`
   runs the pygdsm download test.
 - **Notebooks:** moved unchanged (outputs kept) to `notebooks/archive/`.
 - **Reproducible checks:** `scripts/review/*.py` back up the review findings in plan §2.
@@ -54,6 +54,20 @@ Q1 where to put the beam file (and its format), Q2 whether the beam covers the f
 Q3 the GSM version and network access, Q4 the ground model, Q5 the default observation setup.
 
 ## Entries
+
+### 2026-10-15: step 10, `docs/math.md`
+
+Wrote the mathematical foundation following plan §6: fields and real packing; the measurement
+equation with croissant `main`'s horizon, full-sphere normalization and ground term; frames
+and the pointing convention; integration windows; per-m decoupling, m-space noise and the
+identifiability bound; Wiener filter (primal/dual, per-m), posterior variance, constrained
+realizations, radiometer noise; beam-error parameterization, the scale null direction, the
+notebooks' amp/phase error, sky–beam degeneracies; profile vs marginal likelihood, Fisher,
+NUTS; limitations. Every formula names the function implementing it and the test checking it.
+Two claims had no test yet and got one: the exact degeneracy of a rotation of all pointings
+about the celestial pole (`test_fitting`), and the notebooks' "amp 1.1, phase 5°" error acting
+as 1.1 cos 5° on m = 0 and 1.1 e^{i5°} on m > 0 (`test_diagnostics`). Corrected one formula
+while checking (the notebooks' variant is Σ s e^{+imφ} b, not with b*).
 
 ### 2026-10-15: step 9, `fitting.py` and `diagnostics.py`
 
