@@ -11,33 +11,66 @@ anyone picking this up can start there.
   Not pushed yet: the first Claude session had `pronav5000/eigsep_map_making` attached (no push
   access) and could not also attach the same-named fork, so work has to continue in a session
   whose source is the fork.
-- **Phase:** planning. [`docs/plan.md`](docs/plan.md) is a draft awaiting review; the decisions
-  are in §8 there. No package code has been written yet.
+- **Phase:** plan approved; implementation starts at plan §7 step 2. D1–D10 are settled (plan
+  §8.1). For Q1–Q5 (plan §8.2) the proposals are the working defaults, and Q1/Q2 (the beam file)
+  still need Christian's answer. No package code has been written yet.
 - **Code that works today:** only the notebooks in `notebooks/` (see plan §1 for what each one does).
 - **Reproducible checks:** `scripts/review/*.py` back up the review findings in plan §2.
 - **Data:** none of the data files the notebooks load are in the repo
   (`eigsep_bowtie_v000.npz`, `eigsep_vivaldi.npz`, `gsm_model.npy`, `beam.npy`, `ulsa.npy`).
 
-### Environment that works
+### Environments that work
+
+The package targets croissant `main` (D2):
 
 ```bash
-uv venv -p 3.12 .venv            # croissant v4.x requires Python < 3.13
-uv pip install -p .venv/bin/python "jax[cpu]" s2fft healpy numpyro jaxopt pytest \
-    "git+https://github.com/christianhbye/croissant.git@v4.2.1"
-.venv/bin/python scripts/review/check_notebook_claims.py
-.venv/bin/python scripts/review/check_mspace_decomposition.py
+uv venv -p 3.13 .venv            # croissant main supports Python 3.11-3.13
+uv pip install -p .venv/bin/python \
+    "croissant-sim @ git+https://github.com/christianhbye/croissant.git@main" \
+    healpy numpyro pygdsm pytest
 ```
 
-`croissant.jax` exists only in croissant v4.0.0–v4.2.1 (git tags). PyPI stops at 3.0.0, which
-has no `croissant.jax`, and v5 removed it.
+The review scripts reproduce the *notebooks'* setup, so they need croissant v4.2.1, the last
+version with `croissant.jax`. That version needs Python < 3.13:
 
-### Open questions (see plan §8)
+```bash
+uv venv -p 3.12 .venv-v4
+uv pip install -p .venv-v4/bin/python "jax[cpu]" s2fft healpy numpyro jaxopt pytest \
+    "git+https://github.com/christianhbye/croissant.git@v4.2.1"
+.venv-v4/bin/python scripts/review/check_notebook_claims.py
+.venv-v4/bin/python scripts/review/check_mspace_decomposition.py
+```
 
-D1–D10 in the plan, in particular: the croissant version (D2), the source of the data files and
-the channel alignment between GSM and beams (D4), the scope of beam-fitting changes (D6), and
-GitHub push access (D10).
+Network: in the Claude cloud environment, `pygdsm` cannot download its sky-model data because
+`zenodo.org` and `apps.datacentral.org.au` are blocked by the environment's network policy.
+
+### Open questions (see plan §8.2)
+
+Q1 where to put the beam file (and its format), Q2 whether the beam covers the full sphere,
+Q3 the GSM version and network access, Q4 the ground model, Q5 the default observation setup.
 
 ## Entries
+
+### 2026-10-15: first review of the plan; move to croissant `main`
+
+Decisions from review: croissant `main` (D2); the sky comes from pygdsm and the beam is
+Christian's current version (D4); corrected conventions are fine (D5); beam-fitting scope as
+proposed (D6); SVD + low-ℓ basis, because there is only one beam (D7). The rest take the
+defaults.
+
+Read croissant `main` (`01d26cb`) and recorded what changes for us in plan §2.4:
+- the Earth simulation frame is CIRS at `times_jd[0]`;
+- normalization is the full-sphere integral, with a ground term f_gnd·T_gnd;
+- horizon edges get fractional weights;
+- tilted pointings use `rotate_to_grid` + `topo_to_sim`, since `beam_tilt` is not implemented;
+- integration windows are a sinc taper per m;
+- the `convolve`/`rot_alm_z` conventions are unchanged.
+
+The package design now wraps croissant in `instrument.py`/`sky.py` instead of a `frames.py`.
+`pygdsm` installs, but its data download is blocked by the cloud environment's network policy.
+
+Plan approved. Work moves to a new Claude session whose source is the fork, because this
+session could not push there (see "Current state").
 
 ### 2026-10-15: review of notebooks, plan drafted
 
