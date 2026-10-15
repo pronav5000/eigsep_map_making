@@ -6,18 +6,15 @@ anyone picking this up can start there.
 
 ## Current state
 
-- **Branch:** `refactor/modules` (off `main` @ `433bea7`). Push target is the fork
-  `christianhbye/eigsep_map_making`; the PR goes from the fork into `pronav5000/eigsep_map_making:main`.
-  Not pushed yet: the first Claude session had `pronav5000/eigsep_map_making` attached (no push
-  access) and could not also attach the same-named fork, so work has to continue in a session
-  whose source is the fork.
-- **Phase:** plan approved; implementation starts at plan §7 step 2. D1–D10 are settled (plan
-  §8.1). For Q1–Q5 (plan §8.2) the proposals are the working defaults, and Q1/Q2 (the beam file)
-  still need Christian's answer. No package code has been written yet.
-- **Code that works today:** only the notebooks in `notebooks/` (see plan §1 for what each one does).
+- **Branch:** `refactor/modules` on the fork `christianhbye/eigsep_map_making` (pushed). The PR
+  will go from the fork into `pronav5000/eigsep_map_making:main`.
+- **Phase:** implementing plan §7. Done: step 2 (packaging skeleton). Next: step 3 (`alm.py`).
+  D1–D10 settled (plan §8.1); Q1–Q5 use the proposals as working defaults, Q1/Q2 (beam file)
+  still need Christian's answer.
+- **Package:** `src/eigsep_mapmaking/` exists but is empty; `pip install -e .` works.
+- **Notebooks:** moved unchanged (outputs kept) to `notebooks/archive/`.
 - **Reproducible checks:** `scripts/review/*.py` back up the review findings in plan §2.
-- **Data:** none of the data files the notebooks load are in the repo
-  (`eigsep_bowtie_v000.npz`, `eigsep_vivaldi.npz`, `gsm_model.npy`, `beam.npy`, `ulsa.npy`).
+- **Data:** none of the data files the notebooks load are in the repo; `data/` is gitignored.
 
 ### Environments that work
 
@@ -50,6 +47,15 @@ Q1 where to put the beam file (and its format), Q2 whether the beam covers the f
 Q3 the GSM version and network access, Q4 the ground model, Q5 the default observation setup.
 
 ## Entries
+
+### 2026-10-15: step 2, packaging skeleton
+
+Work continues in a session whose source is the fork; the three planning commits were applied
+from a patch series and pushed. Added `pyproject.toml` (src layout, croissant from git `main`,
+optional extras `gsm` and `dev`), `src/eigsep_mapmaking/__init__.py`, extended `.gitignore`
+(`data/`, build files), and moved the five notebooks to `notebooks/archive/` with `git mv`
+(contents and outputs byte-identical). Environment: Python 3.13, croissant `main` resolved to
+the s2fft fork `slosar/s2fft@cefdf46`, JAX 0.11.2.
 
 ### 2026-10-15: first review of the plan; move to croissant `main`
 

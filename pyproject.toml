@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eigsep_mapmaking"
+version = "0.1.0"
+description = "Drift-scan mapmaking and beam inference for EIGSEP, built on croissant"
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "croissant-sim @ git+https://github.com/christianhbye/croissant.git@main",
+    "numpy",
+    "healpy",
+    "jax",
+    "numpyro",
+]
+
+[project.optional-dependencies]
+gsm = ["pygdsm"]
+dev = ["pytest"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
