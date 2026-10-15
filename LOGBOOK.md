@@ -8,7 +8,7 @@ anyone picking this up can start there.
 
 - **Branch:** `refactor/modules` on the fork `christianhbye/eigsep_map_making` (pushed). The PR
   will go from the fork into `pronav5000/eigsep_map_making:main`.
-- **Phase:** implementing plan §7. Done: steps 2–8. Next: step 9 (`fitting.py`, `diagnostics.py`).
+- **Phase:** implementing plan §7. Done: steps 2–9. Next: step 10 (`docs/math.md`).
   D1–D10 settled (plan §8.1); Q3–Q5 use the proposals as working defaults.
 - **Beam (Q1/Q2 answered by the file):** `data/beam.npz` (gitignored), fetched from Christian's
   Google Drive link (see README "Data"). Bowtie `bm` (200, 130, 258) on MWSS at lmax 128,
@@ -16,8 +16,8 @@ anyone picking this up can start there.
   symmetric (free space?): 51–57 % of the power is below θ = 90°, so with croissant `main`'s
   ground model f_gnd ≈ 0.5. **Open: whether that is intended** (asked Christian).
 - **Package:** `alm`, `instrument` (+ `load_beam`), `sky`, `forward` (`ForwardModel`: apply,
-  adjoint, ground, m-space transform/response), `noise` (radiometer σ, stationary or σ(t), realizations), `simulate` (synthetic beam/sky, `simulate` → `Dataset`), `mapmaking` (Wiener CG / dense / per-m, posterior variance, constrained realizations, display clip), `perturbations` (`BeamBasis`: SVD and low-ℓ bases with the scale direction removed; `LinearBeamModel`).
-- **Tests:** `pytest tests` — 43 pass in ~55 s (mostly JIT compilation); `pytest -m network`
+  adjoint, ground, m-space transform/response), `noise` (radiometer σ, stationary or σ(t), realizations), `simulate` (synthetic beam/sky, `simulate` → `Dataset`), `mapmaking` (Wiener CG / dense / per-m, posterior variance, constrained realizations, display clip), `perturbations` (`BeamBasis`: SVD and low-ℓ bases with the scale direction removed; `LinearBeamModel`), `fitting` (sky-marginalized m-space likelihood, dense and fixed-sky versions, Fisher, whitening, NUTS), `diagnostics`.
+- **Tests:** `pytest tests` — 50 pass in ~75 s (mostly JIT compilation); `pytest -m network`
   runs the pygdsm download test.
 - **Notebooks:** moved unchanged (outputs kept) to `notebooks/archive/`.
 - **Reproducible checks:** `scripts/review/*.py` back up the review findings in plan §2.
@@ -54,6 +54,26 @@ Q1 where to put the beam file (and its format), Q2 whether the beam covers the f
 Q3 the GSM version and network access, Q4 the ground model, Q5 the default observation setup.
 
 ## Entries
+
+### 2026-10-15: step 9, `fitting.py` and `diagnostics.py`
+
+- `loglike_marginal_mspace(β, lin, prior, σ, y or Y)`: m = 0 real Gaussian with mean g(β)
+  (ground term), m > 0 circular complex Gaussians, Cholesky per (f, m). Equals the dense
+  time-domain marginal likelihood (`loglike_marginal_dense`) up to a β-independent constant
+  (differences agree to 1e-6). `loglike_fixed_sky` kept for comparison.
+- `fisher`: ½tr(C⁻¹∂C C⁻¹∂C) + ∂μᵀC⁻¹∂μ at m = 0, tr(C⁻¹∂C C⁻¹∂C) for m > 0; matches the mean
+  −Hessian over 400 m-space data draws (15 %). `whiten` (eigen-decomposition).
+- `numpyro_model`/`run_nuts`: β ~ N(0, σ_k), factor = marginal likelihood; no sky estimate.
+- **Found while testing:** with numpyro's default initialization (uniform in (−2, 2), i.e.
+  ~40σ out) NUTS stuck in a secondary mode (β₂ = 0.39 ± 0.02, true −0.05; log L −387 vs −305
+  at the truth). A grid scan showed the likelihood peaks at the truth for both the non-Gaussian
+  synthetic sky and a Gaussian one. `run_nuts` now starts at β = 0 (nominal beam) and recovers
+  (0.097 ± 0.019, −0.043 ± 0.014) for truth (0.08, −0.05).
+- Test: NUTS recovers an in-basis injected error (2 SVD modes, noisy data, oracle prior)
+  within 4σ, informative posterior, and the fitted beam is closer (normalized) to the truth.
+- `diagnostics`: `normalized_beam_error` (B/∫B), `scale_fraction`, `mode_overlap`,
+  `map_error_per_ell`, `relative_error` (no stray sqrt), `adjoint_test`, `rank_bound`,
+  `mspace_rank` (numerical rank within 4 of the bound for 3 pointings at lmax 8).
 
 ### 2026-10-15: step 8, `perturbations.py`
 
