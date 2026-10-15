@@ -84,3 +84,14 @@ def test_rotation_about_pole_is_exactly_degenerate(setup):
     Y = fm.to_mspace(d.y)
     ll = lambda f: fitting.loglike_mspace_Y(*fitting._mspace_terms(f, s["prior"], d.sigma), Y)
     np.testing.assert_allclose(ll(rot), ll(fm), rtol=1e-12)
+
+
+def test_find_map_escapes_secondary_mode(setup):
+    """With 3 pointings the posterior has a secondary mode near (-0.045, -0.037) that BFGS
+    from beta = 0 falls into; the multi-start MAP finds the global one."""
+    s = setup
+    d = s["data"]
+    b1, lp1 = fitting.find_map(s["lin"], s["prior"], d.sigma, d.y, s["basis"].sigma, n_starts=1)
+    b, lp = fitting.find_map(s["lin"], s["prior"], d.sigma, d.y, s["basis"].sigma)
+    assert lp >= lp1
+    np.testing.assert_allclose(b, s["beta_true"], atol=0.03)

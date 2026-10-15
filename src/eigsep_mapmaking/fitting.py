@@ -112,20 +112,65 @@ def numpyro_model(lin, prior, sigma, Y, beta_sigma):
     numpyro.factor("loglike", loglike_marginal_mspace(beta, lin, prior, sigma, Y=Y))
 
 
-def run_nuts(lin, prior, sigma, y, beta_sigma, key=0, num_warmup=300, num_samples=500,
-             init=None, progress_bar=False):
-    """Sample p(beta | y) with NUTS; returns the samples (num_samples, K).
+def log_posterior(beta, lin, prior, sigma, Y, beta_sigma):
+    """Sky-marginalized log-likelihood plus the Gaussian prior on beta."""
+    beta = jnp.asarray(beta)
+    lp = -0.5 * jnp.sum((beta / jnp.asarray(beta_sigma)) ** 2)
+    return lp + loglike_marginal_mspace(beta, lin, prior, sigma, Y=Y)
 
-    The chain starts at ``init`` (default beta = 0, the nominal beam). numpyro's default,
-    uniform in (-2, 2), starts tens of prior sigmas out, where the likelihood can have
-    secondary modes (the beam integral is a ratio of linear functions of beta); a chain
-    started there was seen to stick in one.
+
+def find_map(lin, prior, sigma, y, beta_sigma, init=None, n_starts=None, seed=0):
+    """Maximum a posteriori beta by BFGS (scipy) with JAX gradients. Returns
+    ``(beta_map, log_posterior)``.
+
+    The posterior can be multimodal (seen with few pointings), so BFGS runs from beta = 0
+    (the nominal beam; or ``init``) and from ``n_starts - 1`` draws of the prior
+    (default 4 K), and the best optimum is kept.
+    """
+    from scipy.optimize import minimize
+
+    K = len(beta_sigma)
+    Y = lin.forward_model(jnp.zeros(K)).to_mspace(y)
+    scale = np.asarray(beta_sigma, float)  # optimize in prior-sigma units
+    f = jax.jit(jax.value_and_grad(
+        lambda u: -log_posterior(u * scale, lin, prior, sigma, Y, beta_sigma)))
+
+    def fun(u):
+        v, g = f(jnp.asarray(u))
+        return float(v), np.asarray(g, float)
+
+    n_starts = 4 * K if n_starts is None else n_starts
+    rng = np.random.default_rng(seed)
+    first = np.zeros(K) if init is None else np.asarray(init) / scale
+    starts = [first] + [rng.normal(size=K) for _ in range(n_starts - 1)]
+    best = None
+    for u0 in starts:
+        res = minimize(fun, u0, jac=True, method="BFGS", options=dict(gtol=1e-8, maxiter=2000))
+        if np.isfinite(res.fun) and (best is None or res.fun < best.fun):
+            best = res
+    return best.x * scale, -best.fun
+
+
+def run_nuts(lin, prior, sigma, y, beta_sigma, key=0, num_warmup=300, num_samples=500,
+             init="map", progress_bar=False):
+    """Sample p(beta | y) with NUTS (dense mass matrix); returns samples (num_samples, K).
+
+    By default the chain starts at the MAP (``find_map``, multi-start). The posterior is usually much
+    narrower than the prior and, far from the nominal beam, the likelihood can have secondary
+    modes: a chain started at numpyro's default (uniform in (-2, 2)) stuck in one, and a chain
+    started at beta = 0 with a posterior ~100x narrower than the prior did not reach the mode
+    during warmup, and with 3 pointings BFGS from beta = 0 found a secondary mode
+    (LOGBOOK, 2026-10-15). ``init`` may also be an array or None (beta = 0).
     """
     from numpyro.infer import MCMC, NUTS, init_to_value
 
-    Y = lin.forward_model(jnp.zeros(len(beta_sigma))).to_mspace(y)
-    init = jnp.zeros(len(beta_sigma)) if init is None else jnp.asarray(init)
-    kern = NUTS(numpyro_model, init_strategy=init_to_value(values={"beta": init}))
+    K = len(beta_sigma)
+    Y = lin.forward_model(jnp.zeros(K)).to_mspace(y)
+    if isinstance(init, str) and init == "map":
+        init = find_map(lin, prior, sigma, y, beta_sigma)[0]
+    init = jnp.zeros(K) if init is None else jnp.asarray(init)
+    kern = NUTS(numpyro_model, dense_mass=True,
+                init_strategy=init_to_value(values={"beta": init}))
     mcmc = MCMC(kern, num_warmup=num_warmup, num_samples=num_samples, progress_bar=progress_bar)
     mcmc.run(jax.random.PRNGKey(key), lin, prior, sigma, Y, jnp.asarray(beta_sigma))
     return mcmc.get_samples()["beta"]

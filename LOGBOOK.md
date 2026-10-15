@@ -7,21 +7,21 @@ anyone picking this up can start there.
 ## Current state
 
 - **Branch:** `refactor/modules` on the fork `christianhbye/eigsep_map_making` (pushed). The PR
-  will go from the fork into `pronav5000/eigsep_map_making:main`.
-- **Phase:** implementing plan §7. Done: steps 2–10. Next: step 11 (README, `scripts/make_gsm.py`, example).
-  D1–D10 settled (plan §8.1); Q3–Q5 use the proposals as working defaults.
-- **Beam (Q1/Q2 answered by the file):** `data/beam.npz` (gitignored), fetched from Christian's
-  Google Drive link (see README "Data"). Bowtie `bm` (200, 130, 258) on MWSS at lmax 128,
-  51–250 MHz (`freqs` in Hz), directivity (∫ = 4π), full sphere. It is close to up/down
-  symmetric (free space?): 51–57 % of the power is below θ = 90°, so with croissant `main`'s
-  ground model f_gnd ≈ 0.5. **Open: whether that is intended** (asked Christian).
-- **Package:** `alm`, `instrument` (+ `load_beam`), `sky`, `forward` (`ForwardModel`: apply,
-  adjoint, ground, m-space transform/response), `noise` (radiometer σ, stationary or σ(t), realizations), `simulate` (synthetic beam/sky, `simulate` → `Dataset`), `mapmaking` (Wiener CG / dense / per-m, posterior variance, constrained realizations, display clip), `perturbations` (`BeamBasis`: SVD and low-ℓ bases with the scale direction removed; `LinearBeamModel`), `fitting` (sky-marginalized m-space likelihood, dense and fixed-sky versions, Fisher, whitening, NUTS), `diagnostics`.
-- **Tests:** `pytest tests` — 52 pass in ~75 s (mostly JIT compilation); `pytest -m network`
-  runs the pygdsm download test.
-- **Notebooks:** moved unchanged (outputs kept) to `notebooks/archive/`.
-- **Reproducible checks:** `scripts/review/*.py` back up the review findings in plan §2.
-- **Network:** the cloud policy now allows zenodo.org (pygdsm), GitHub releases, Google Drive.
+  goes from the fork into `pronav5000/eigsep_map_making:main` (plan §7 step 12).
+- **Phase:** plan §7 steps 2–11 done. Next: step 12, open the PR.
+- **Package:** `eigsep_mapmaking` — `alm`, `instrument`, `sky`, `forward`, `noise`, `simulate`,
+  `mapmaking`, `perturbations`, `fitting`, `diagnostics`. Mathematics in `docs/math.md`.
+- **Tests:** `pytest` — 53 pass in ~75 s (mostly JIT compilation), synthetic data only;
+  `pytest -m network` adds the pygdsm download test.
+- **Example:** `examples/simulate_map_and_fit.py` (synthetic, ~45 s) and `--data` (bowtie +
+  GSM2016 at lmax 32, ~2 min): both recover an injected 3-mode beam error to the Fisher precision.
+- **Data:** `data/` (gitignored). `scripts/fetch_beam.py` downloads the beam (sha256-checked);
+  `scripts/make_gsm.py` writes `data/gsm_<nside>.npz` (network policy now allows zenodo.org).
+- **Open questions:** Q6 (plan §8.2): the bowtie file is close to up/down symmetric (51–57 %
+  below the horizon), so f_gnd ≈ 0.5 under croissant's ground model — intended? Q4 (ground
+  model) and Q5 (default observation) use the proposals.
+- **Notebooks:** unchanged in `notebooks/archive/`. `scripts/review/` needs croissant v4.2.1
+  (see below).
 
 ### Environments that work
 
@@ -54,6 +54,28 @@ Q1 where to put the beam file (and its format), Q2 whether the beam covers the f
 Q3 the GSM version and network access, Q4 the ground model, Q5 the default observation setup.
 
 ## Entries
+
+### 2026-10-15: step 11, README, scripts, example
+
+- `README.md`: install, data, quick start (checked by running it), layout, the corrected
+  conventions.
+- `scripts/fetch_beam.py` (Google Drive download with sha256 check), `scripts/make_gsm.py`
+  (frequencies from `--freqs` or the beam file; wrote `data/gsm_64.npz` for 52–59 MHz).
+- `instrument.beam_alm_topo` truncates a finer beam grid (the lmax 128 MWSS file) to the
+  simulation lmax before rotating.
+- `examples/simulate_map_and_fit.py`. Its first run showed NUTS started at β = 0 stalling far
+  from a posterior ~100× narrower than the prior (β₁ = 0.016 ± 0.0003, true 0.075), although the
+  likelihood itself peaks at the truth (BFGS from 0 finds it). Added `log_posterior` and
+  `find_map` (BFGS with JAX gradients, multi-start: β = 0 plus 4K prior draws, because with 3
+  pointings the unit-test posterior has a secondary mode at log p −340 vs −307 that BFGS from 0
+  finds), and `run_nuts` now starts at the MAP with a dense mass matrix. New test
+  `test_find_map_escapes_secondary_mode`.
+- Results: synthetic (lmax 16, 20 pointings) β = (0.0747 ± 0.0005, −0.0491 ± 0.0008,
+  0.0262 ± 0.0012) for truth (0.075, −0.05, 0.025), normalized beam error 10 % → 0.2 %.
+  Bowtie + GSM2016 (lmax 32, 20 pointings, 55–56 MHz, f_gnd = 0.50): β = (0.0755 ± 0.0003,
+  −0.0504 ± 0.0003, 0.0239 ± 0.0009), Fisher errors (0.00036, 0.00030, 0.00065), beam error
+  9.4 % → 0.13 %, map error 0.174 (true beam) / 5.4 (nominal) / 0.183 (fitted).
+- Plan status updated (§7 steps ticked, §8.2 answers, new Q6 on the below-horizon half).
 
 ### 2026-10-15: step 10, `docs/math.md`
 

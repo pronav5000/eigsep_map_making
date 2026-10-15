@@ -1,7 +1,8 @@
 # Reorganization plan: notebooks → `eigsep_mapmaking` package
 
-**Status: revised after the first review. Decisions D2, D4, D5, D6 and D7 are settled (§8).
-The open questions are in §8.2. Nothing from §3 onwards is implemented yet.**
+**Status: implemented (steps 1–11 of §7); see `LOGBOOK.md` for what was done and what changed
+along the way. Q1/Q2 are answered by the beam file (§8.2); the below-horizon half of that beam
+is a new open question (§8.2 Q6).**
 Progress is tracked in [`LOGBOOK.md`](../LOGBOOK.md).
 
 Deliverable: branch `refactor/modules`, pushed to the fork `christianhbye/eigsep_map_making`,
@@ -220,16 +221,16 @@ Shapes: `(B, F, L, 2L-1)` for beam alms (pointing, frequency), `(F, L, 2L-1)` fo
 
 1. Plan + logbook + review scripts ✅
 2. Packaging skeleton: `pyproject.toml`, `src/` layout, `.gitignore` (incl. `data/`), move
-   notebooks to `notebooks/archive/`
-3. `alm.py` + tests
-4. `instrument.py`, `sky.py` + tests (incl. agreement with `croissant.Simulator`)
-5. `forward.py` (time domain + m-space) + tests
-6. `noise.py`, `simulate.py` + tests
-7. `mapmaking.py` + tests
-8. `perturbations.py` + tests
-9. `fitting.py`, `diagnostics.py` + tests (incl. synthetic recovery test)
-10. `docs/math.md`
-11. README, `scripts/make_gsm.py`, example script, final logbook update
+   notebooks to `notebooks/archive/` ✅
+3. `alm.py` + tests ✅
+4. `instrument.py`, `sky.py` + tests (incl. agreement with `croissant.Simulator`) ✅
+5. `forward.py` (time domain + m-space) + tests ✅
+6. `noise.py`, `simulate.py` + tests ✅
+7. `mapmaking.py` + tests ✅
+8. `perturbations.py` + tests ✅
+9. `fitting.py`, `diagnostics.py` + tests (incl. synthetic recovery test) ✅
+10. `docs/math.md` ✅
+11. README, `scripts/make_gsm.py`, example script, final logbook update ✅
 12. Push the branch to the fork and open the PR into `pronav5000/eigsep_map_making:main`
 
 ## 8. Decisions
@@ -258,6 +259,15 @@ Shapes: `(B, F, L, 2L-1)` for beam alms (pointing, frequency), `(F, L, 2L-1)` fo
 | Q3 | GSM version | GSM2016 (`pygdsm.GlobalSkyModel16`) at nside 64 in K, as in croissant v4's `Sky.gsm`. Needs `zenodo.org` or `apps.datacentral.org.au` allowed in the cloud environment's network settings (currently blocked). |
 | Q4 | Ground model in sims | croissant's default (uniform `Tgnd`=300 K, known in the inversion and subtracted). Alternative: `Tgnd` as a nuisance parameter. |
 | Q5 | Default observation | keep the notebooks' setup as the default config (Earth, lat 39.2477, lon −113.4033, start 2025-12-01 09:00 UTC, 500 times over one sidereal day, 20 tilts 0–90° about one horizontal axis, freqs 52–59 MHz). Everything is configurable. |
+
+Answers so far: **Q1/Q2** — the beam is `data/beam.npz` (fetched by `scripts/fetch_beam.py`
+from Christian's Google Drive share): `bm` (200, 130, 258) on an MWSS grid at lmax 128,
+51–250 MHz in Hz, a full-sphere directivity. **Q3** — GSM2016 works now that the cloud network
+allows zenodo.org (`scripts/make_gsm.py`). Q4, Q5: proposals in use.
+
+| # | question | status |
+|---|---|---|
+| Q6 | The bowtie pattern has 51–57 % of its power below θ = 90° (close to up/down symmetric, as in free space), so croissant `main`'s model gives f_gnd ≈ 0.5 for a zenith pointing: half of every sample is the 300 K ground term. Is the file a free-space beam, and is a uniform ground at T_gnd the right model for the lower half? | open, asked Christian |
 
 ## 9. Out of scope for this PR (follow-ups)
 

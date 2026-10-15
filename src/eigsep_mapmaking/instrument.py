@@ -219,7 +219,11 @@ def beam_alm_topo(beam_maps, obs, sampling="healpix"):
     kw = dict(lmax=obs.lmax) if sampling == "healpix" else {}
     beam = croissant.Beam(beam_maps, obs.freqs, sampling=sampling, horizon=jnp.ones(spatial),
                           engine=obs.engine, **kw)
-    return beam.compute_alm()
+    alm = beam.compute_alm()
+    if beam.lmax < obs.lmax:
+        raise ValueError(f"beam grid band limit {beam.lmax} is below lmax={obs.lmax}")
+    # a finer grid (e.g. the lmax 128 MWSS beam file) is truncated to the simulation lmax
+    return alm[..., : obs.lmax + 1, beam.lmax - obs.lmax : beam.lmax + obs.lmax + 1]
 
 
 def pointed_beam(alm_topo, euler, obs):
