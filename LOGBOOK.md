@@ -6,8 +6,11 @@ anyone picking this up can start there.
 
 ## Current state
 
-- **Branch:** `refactor/modules` (off `main` @ `433bea7`). Not pushed yet: pushes from the Claude
-  session were refused (no GitHub App access to `pronav5000/eigsep_map_making`).
+- **Branch:** `refactor/modules` (off `main` @ `433bea7`). Push target is the fork
+  `christianhbye/eigsep_map_making`; the PR goes from the fork into `pronav5000/eigsep_map_making:main`.
+  Not pushed yet: the first Claude session had `pronav5000/eigsep_map_making` attached (no push
+  access) and could not also attach the same-named fork, so work has to continue in a session
+  whose source is the fork.
 - **Phase:** planning. [`docs/plan.md`](docs/plan.md) is a draft awaiting review; the decisions
   are in §8 there. No package code has been written yet.
 - **Code that works today:** only the notebooks in `notebooks/` (see plan §1 for what each one does).
